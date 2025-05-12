@@ -41,7 +41,11 @@ function App() {
   const [showEstimatedDateModal, setShowEstimatedDateModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedSeller, setSelectedSeller] = useState('');
-  const [items, setItems] = useState<BlindQuotationItem[]>([{ ...DEFAULT_BLIND_ITEM }]);
+  const [items, setItems] = useState<BlindQuotationItem[]>([
+  { ...DEFAULT_BLIND_ITEM, id: '1' },
+  { ...DEFAULT_BLIND_ITEM, id: '2' },
+  { ...DEFAULT_BLIND_ITEM, id: '3' }
+]);
   const [notes, setNotes] = useState('');
   const [freightCost, setFreightCost] = useState('0.00');
   const [estimatedDate, setEstimatedDate] = useState('');
