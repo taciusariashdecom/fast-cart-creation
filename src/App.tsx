@@ -35,6 +35,8 @@ const SELLER_OPTIONS = [
 ];
 
 function App() {
+  const [cartCheckoutUrl, setCartCheckoutUrl] = useState<string | null>(null);
+  const [draftOrderUrl, setDraftOrderUrl] = useState<string | null>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showFreightModal, setShowFreightModal] = useState(false);
@@ -206,6 +208,12 @@ function App() {
 
       console.log('[DEBUG] Payload enviado ao webhook:', webhookPayload);
       const response = await submitCart(webhookPayload);
+      if (response.carrinho_checkout_url) {
+        setCartCheckoutUrl(response.carrinho_checkout_url);
+      }
+      if (response.draftOrder_id) {
+        setDraftOrderUrl(`https://admin.shopify.com/store/testefacilpersianas/draft_orders/${response.draftOrder_id}`);
+      }
       
       if (response.provider_shipping_cost) {
         setFreightCost(response.provider_shipping_cost.toFixed(2));
@@ -379,6 +387,66 @@ function App() {
 
         {renderNotes()}
         {renderBottomActions()}
+
+        {/* Botões de links do carrinho */}
+        {(cartCheckoutUrl || draftOrderUrl) && (
+          <div className="flex gap-4 mt-4 mb-4">
+            {cartCheckoutUrl && (
+  <div className="flex flex-col items-start gap-2">
+    <button
+      className="px-4 py-2 bg-blue-600 text-white rounded"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(cartCheckoutUrl);
+          alert('Link do carrinho copiado!');
+        } catch (err) {
+          // Fallback para browsers antigos
+          const textArea = document.createElement('textarea');
+          textArea.value = cartCheckoutUrl;
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          try {
+            document.execCommand('copy');
+            alert('Link do carrinho copiado!');
+          } catch (err2) {
+            alert('Não foi possível copiar automaticamente. Copie manualmente abaixo.');
+          }
+          document.body.removeChild(textArea);
+        }
+      }}
+    >
+      Copiar link do carrinho
+    </button>
+    <span className="text-sm text-gray-700 break-all bg-gray-100 rounded px-2 py-1 select-all mt-1">
+      {cartCheckoutUrl}
+    </span>
+  </div>
+)}
+            {/* Se quiser mostrar o draftOrderUrl também, adicione aqui */}
+            {draftOrderUrl && (
+  <>
+    <a
+      href={draftOrderUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="px-4 py-2 bg-gray-700 text-white rounded"
+    >
+      Ver Draft Order Shopify
+    </a>
+    <button
+      className="px-4 py-2 bg-gray-500 text-white rounded"
+      onClick={() => {
+        navigator.clipboard.writeText(draftOrderUrl);
+        alert('Link do draft order copiado!');
+      }}
+    >
+      Copiar link do cliente
+    </button>
+  </>
+)}
+          </div>
+        )}
 
         {showReports && (
           <ReportsSection
