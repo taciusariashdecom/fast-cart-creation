@@ -348,49 +348,30 @@ export async function updatePrices(activeItems: BlindQuotationItem[]): Promise<B
 }
 
 export async function fetchProducts(): Promise<ProcessedProduct[]> {
-  logger.startGroup('🔄 Processando Produtos do Supabase');
+  logger.startGroup('🔄 Processando Produtos do N8N Webhook');
 
   try {
-    const { data: shopifyData, error } = await supabase
-      .from('shopify_products')
-      .select('products')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    const webhookUrl = 'https://n8n.facilpersianas.com.br/webhook/get-products';
+    logger.info('🌐 Buscando produtos do N8N Webhook:', webhookUrl);
 
-    if (error) throw error;
+    const response = await fetch(webhookUrl);
 
-    if (!shopifyData?.products?.edges?.length) {
-      logger.warn('Estrutura de dados inválida ou vazia');
-      return [];
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return shopifyData.products.edges
-      .map(edge => edge?.node)
-      .filter((node): node is ShopifyProduct => {
-        const isValid = node && 
-          'title' in node &&
-          'alturaMaxima' in node &&
-          'alturaMinima' in node &&
-          'larguraMaxima' in node &&
-          'larguraMinima' in node;
+    const data = await response.json();
 
-        if (!isValid) logger.warn('Node inválido encontrado:', node);
-        return isValid;
-      })
-      .map(product => ({
-        title: product.title,
-        product_ids: getProductIds(product),
-        minWidth: mmToCm(product.larguraMinima.value),
-        maxWidth: mmToCm(product.larguraMaxima.value),
-        minHeight: mmToCm(product.alturaMinima.value),
-        maxHeight: mmToCm(product.alturaMaxima.value),
-        type: product.product_type || '',
-        movementControl: product.movementControl
-      }));
+    if (!Array.isArray(data)) {
+      logger.warn('⚠️ A resposta do Webhook não é um array. Retornando array vazio.');
+      return [];
+    }
+    
+    logger.info('✅ Produtos recebidos com sucesso do N8N Webhook.', data);
+    return data as ProcessedProduct[];
 
   } catch (error) {
-    logger.error('Erro ao buscar produtos:', error);
+    logger.error('❌ Erro ao buscar produtos do N8N Webhook:', error);
     return [];
   } finally {
     logger.endGroup();
